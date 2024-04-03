@@ -557,22 +557,28 @@ class QueryView(APIView):
         q = request.data.get('query', 'EXPLAIN SELECT \'Hello World\'')
         d = request.data.get('db', 'postgres')
         q = try_explain_analyze(q)
+
+        # Additional query to get server statistics
+        _PG_CLASS_QUERY = 'SELECT relname, relpages, reltuples FROM pg_class;'
         
         # get query results
         try:
             conn = psycopg2.connect("host=localhost dbname={} user=postgres".format(d))    # Connect to your postgres DB
-            cur = conn.cursor()     # Open a cursor to perform database operations
+            cur = conn.cursor()         # Open a cursor to perform database operations
 
             clear_previous_log()
 
-            cur.execute(q)        # Execute a query
-            records = cur.fetchall()     # Retrieve query results
+            cur.execute(q)              # Execute a query
+            records = cur.fetchall()    # Retrieve query results
 
             log_lines = read_and_clear_log()
             opt_data = process_log(log_lines)
 
+            cur.execute(_PG_CLASS_QUERY)
+            pg_class_results = cur.fetchall()
+
             # return
-            return Response({'query': q, 'result': records, 'optimizer': opt_data})
+            return Response({'query': q, 'result': records, 'pg_class': pg_class_results, 'optimizer': opt_data})
         except psycopg2.OperationalError as e:
             print(e)
             return Response({'error': str(e)})
