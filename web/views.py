@@ -500,6 +500,23 @@ def get_geqo_data(log_lines: list) -> dict:
     data['reloptinfo'] = parse_geqo_path(log_lines)
     return data
 
+def split_log_lines(log_lines):
+    _MARK = '[VPQO] split line'
+    ret, for_items = [], []
+    last = 0
+    for idx, line in enumerate(log_lines):
+        if _MARK not in line:
+            continue
+
+        ret.append(log_lines[last:idx])
+        last = idx
+
+        raw = line.split("RELOPTINFO")[1]
+        relids = raw[raw.find("(")+1:raw.find(")")]
+        for_items.append(relids)
+
+    return ret, for_items
+
 def process_log(log_lines):
     ret = {
         'type': 'dp',
@@ -572,15 +589,30 @@ class QueryView(APIView):
             records = cur.fetchall()    # Retrieve query results
 
             log_lines = read_and_clear_log()
-            opt_data = process_log(log_lines)
+            log_lines_list, for_items = split_log_lines(log_lines)
+            ret = []
+            for idx, logs in enumerate(log_lines_list):
+                opt_data = process_log(logs)
+                opt_data['for'] = for_items[idx]
+                ret.append(opt_data)
 
             cur.execute(_PG_CLASS_QUERY)
             pg_class_results = cur.fetchall()
 
             # return
-            return Response({'query': q, 'result': records, 'pg_class': pg_class_results, 'optimizer': opt_data})
+            return Response({'query': q, 'result': records, 'pg_class': pg_class_results, 'optimizer': ret})
         except psycopg2.OperationalError as e:
             print(e)
             return Response({'error': str(e)})
+        except psycopg2.errors.SyntaxError as e:
+            print(e)
+            return Response({'error': str(e)})
+        except psycopg2.errors.UndefinedTable as e:
+            print(e)
+            return Response({'error': str(e)})
+        except psycopg2.ProgrammingError as e:
+            print(e)
+            return Response({'error': str(e)})
+
 
 
