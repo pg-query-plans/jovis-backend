@@ -96,29 +96,31 @@ def parse_path_with_state_machine(logs: list, cur: int):
 
         elif state == 'PathDetail':
             if path_buffer['node'] == 'SeqScan':
-                _SEQSCAN_DETAILS_EXP = r'\ *details: cpu_run_cost=(\d+\.\d+) disk_run_cost=(\d+\.\d+) tuples=(\d+) cpu_per_tuple=(\d+\.\d+) pages=(\d+\.\d+) spc_seq_page_cost=(\d+\.\d+) target_per_tuple=(\d+\.\d+)'
+                _SEQSCAN_DETAILS_EXP = r'\ *details: cpu_run_cost=(\d+\.\d+) disk_run_cost=(\d+\.\d+) tuples=(\d+) qual_cost=(\d+\.\d+) cpu_per_tuple=(\d+\.\d+) pages=(\d+\.\d+) spc_seq_page_cost=(\d+\.\d+) target_per_tuple=(\d+\.\d+)'
                 details = re.match(_SEQSCAN_DETAILS_EXP, line)
                 if details:
-                    cpu_run_cost, disk_run_cost, tuples, cpu_per_tuple, pages, spc_seq_page_cost, target_per_tuple = details.groups()
+                    cpu_run_cost, disk_run_cost, tuples, qual_cost, cpu_per_tuple, pages, spc_seq_page_cost, target_per_tuple = details.groups()
                     path_buffer.update({
                         'cpu_run_cost': float(cpu_run_cost),
                         'disk_run_cost': float(disk_run_cost),
                         'tuples': int(tuples),
+                        'qual_cost': float(qual_cost),
                         'cpu_per_tuple': float(cpu_per_tuple),
                         'pages': float(pages),
                         'spc_seq_page_cost': float(spc_seq_page_cost),
                         'target_per_tuple': float(target_per_tuple)
                     })
             elif path_buffer['node'] == 'BitmapHeapScan':
-                _BITMAPHEAPSCAN_DETAILS_EXP = r'\ *details: cpu_run_cost=(\d+\.\d+) tuples=(\d+) cpu_per_tuple=(\d+\.\d+) target_per_tuple=(\d+\.\d+) pages=(\d+\.\d+) spc_seq_page_cost=(\d+\.\d+) spc_random_page_cost=(\d+\.\d+) T=(\d+\.\d+) index_total_cost=(\d+\.\d+) cost_per_page=(\d+\.\d+)'
+                _BITMAPHEAPSCAN_DETAILS_EXP = r'\ *details: cpu_run_cost=(\d+\.\d+) tuples=(\d+) cpu_per_tuple=(\d+\.\d+) target_per_tuple=(\d+\.\d+) qual_cost=(\d+\.\d+) pages=(\d+\.\d+) spc_seq_page_cost=(\d+\.\d+) spc_random_page_cost=(\d+\.\d+) T=(\d+\.\d+) index_total_cost=(\d+\.\d+) cost_per_page=(\d+\.\d+)'
                 details = re.match(_BITMAPHEAPSCAN_DETAILS_EXP, line)
                 if details:
-                    cpu_run_cost, tuples, cpu_per_tuple, target_per_tuple, pages, spc_seq_page_cost, spc_random_page_cost, T, index_total_cost, cost_per_page = details.groups()
+                    cpu_run_cost, tuples, cpu_per_tuple, target_per_tuple, qual_cost, pages, spc_seq_page_cost, spc_random_page_cost, T, index_total_cost, cost_per_page = details.groups()
                     path_buffer.update({
                         'cpu_run_cost': float(cpu_run_cost),
                         'tuples': int(tuples),
                         'cpu_per_tuple': float(cpu_per_tuple),
                         'target_per_tuple': float(target_per_tuple),
+                        'qual_cost': float(qual_cost),
                         'pages': float(pages),
                         'spc_seq_page_cost': float(spc_seq_page_cost),
                         'spc_random_page_cost': float(spc_random_page_cost),
