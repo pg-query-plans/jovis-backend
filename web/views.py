@@ -198,10 +198,10 @@ def parse_path_with_state_machine(logs: list, cur: int):
                         'inner_skip_rows': float(inner_skip_rows)
                     })
             elif path_buffer['node'] == 'HashJoin':
-                _HASHJOIN_DETAILS_EXP = r'\s*details:\s*initial_startup_cost=(\d+\.\d+)\s*initial_run_cost=(\d+\.\d+)\s*outer_path_startup=(\d+\.\d+)\s*outer_path_total=(\d+\.\d+)\s*inner_path_startup=(\d+\.\d+)\s*inner_path_total=(\d+\.\d+)\s*cpu_operator_cost=(\d+\.\d+)\s*num_hashclauses=(\d+)\s*cpu_tuple_cost=(\d+\.\d+)\s*inner_path_rows=(\d+\.\d+)\s*hashcpu_cost=(\d+\.\d+)\s*outer_path_rows=(\d+\.\d+)\s*innerpages=(\d+\.\d+)\s*outerpages=(\d+\.\d+)\s*seqpage_cost=(\d+\.\d+)\s*'
+                _HASHJOIN_DETAILS_EXP = r'\s*details:\s*initial_startup_cost=(\d+\.\d+)\s*initial_run_cost=(\d+\.\d+)\s*outer_path_startup=(\d+\.\d+)\s*outer_path_total=(\d+\.\d+)\s*inner_path_startup=(\d+\.\d+)\s*inner_path_total=(\d+\.\d+)\s*cpu_operator_cost=(\d+\.\d+)\s*num_hashclauses=(\d+)\s*cpu_tuple_cost=(\d+\.\d+)\s*inner_path_rows=(\d+\.\d+)\s*hashcpu_cost=(\d+\.\d+)\s*outer_path_rows=(\d+\.\d+)\s*innerpages=(\d+\.\d+)\s*outerpages=(\d+\.\d+)\s*seqpage_cost=(\d+\.\d+)\s*hashjointuples=(\d+\.\d+)\s*cpu_per_tuple=(\d+\.\d+)\s*hash_qual_eval_cost=(\d+\.\d+)'
                 details = re.match(_HASHJOIN_DETAILS_EXP, line)
                 if details:
-                    initial_startup_cost, initial_run_cost, outer_path_startup, outer_path_total, inner_path_startup, inner_path_total, cpu_operator_cost, num_hashclauses, cpu_tuple_cost, inner_path_rows, hashcpu_cost, outer_path_rows, innerpages, outerpages, seqpage_cost = details.groups()
+                    initial_startup_cost, initial_run_cost, outer_path_startup, outer_path_total, inner_path_startup, inner_path_total, cpu_operator_cost, num_hashclauses, cpu_tuple_cost, inner_path_rows, hashcpu_cost, outer_path_rows, innerpages, outerpages, seqpage_cost, hashjointuples, cpu_per_tuple, hash_qual_eval_cost = details.groups()
                     path_buffer.update({
                         'initial_startup_cost': float(initial_startup_cost),
                         'initial_run_cost': float(initial_run_cost),
@@ -217,7 +217,10 @@ def parse_path_with_state_machine(logs: list, cur: int):
                         'outer_path_rows': float(outer_path_rows),
                         'innerpages': float(innerpages),
                         'outerpages': float(outerpages),
-                        'seqpage_cost': float(seqpage_cost)
+                        'seqpage_cost': float(seqpage_cost),
+                        'hashjointuples': float(hashjointuples),
+                        'cpu_per_tuple': float(cpu_per_tuple),
+                        'hash_qual_eval_cost': float(hash_qual_eval_cost)
                     })
 
             state = 'PathWait'
