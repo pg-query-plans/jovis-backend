@@ -157,10 +157,10 @@ def parse_path_with_state_machine(logs: list, cur: int):
                         'input_startup_cost': float(input_startup_cost)
                     })
             elif path_buffer['node'] == 'NestLoop':
-                _NESTLOOP_DETAILS_EXP = r'\ *details: initial_startup_cost=(\d+\.\d+) initial_run_cost=(\d+\.\d+) inner_run_cost=(\d+\.\d+) inner_rescan_run_cost=(\d+\.\d+) inner_rescan_start_cost=(\d+\.\d+) inner_path_startup=(\d+\.\d+) outer_rows=(\d+\.\d+) outer_path_startup=(\d+\.\d+) outer_path_run=(\d+\.\d+)'
+                _NESTLOOP_DETAILS_EXP = r'\ *details: initial_startup_cost=(\d+\.\d+) initial_run_cost=(\d+\.\d+) inner_run_cost=(\d+\.\d+) inner_rescan_run_cost=(\d+\.\d+) inner_rescan_start_cost=(\d+\.\d+) inner_path_startup=(\d+\.\d+) outer_rows=(\d+\.\d+) outer_path_startup=(\d+\.\d+) outer_path_run=(\d+\.\d+) ntuples=(\d+\.\d+) cpu_per_tuple=(\d+\.\d+) matched_outer_tuple_cost=(\d+\.\d+) unmatched_outer_tuple_cost=(\d+\.\d+) inner_scan_cost=(\d+\.\d+)'
                 details = re.match(_NESTLOOP_DETAILS_EXP, line)
                 if details:
-                    initial_startup_cost, initial_run_cost, inner_run_cost, inner_rescan_run_cost, inner_rescan_start_cost, inner_path_startup, outer_rows, outer_path_startup, outer_path_run = details.groups()
+                    initial_startup_cost, initial_run_cost, inner_run_cost, inner_rescan_run_cost, inner_rescan_start_cost, inner_path_startup, outer_rows, outer_path_startup, outer_path_run, ntuples, cpu_per_tuple, matched_outer_tuple_cost, unmatched_outer_tuple_cost, inner_scan_cost = details.groups()
                     path_buffer.update({
                         'initial_startup_cost': float(initial_startup_cost),
                         'initial_run_cost': float(initial_run_cost),
@@ -170,13 +170,18 @@ def parse_path_with_state_machine(logs: list, cur: int):
                         'inner_path_startup': float(inner_path_startup),
                         'outer_rows': float(outer_rows),
                         'outer_path_startup': float(outer_path_startup),
-                        'outer_path_run': float(outer_path_run)
+                        'outer_path_run': float(outer_path_run),
+                        'ntuples': float(ntuples),
+                        'cpu_per_tuple': float(cpu_per_tuple),
+                        'matched_outer_tuple_cost': float(matched_outer_tuple_cost),
+                        'unmatched_outer_tuple_cost': float(unmatched_outer_tuple_cost),
+                        'inner_scan_cost': float(inner_scan_cost)
                     })
             elif path_buffer['node'] == 'MergeJoin':
-                _MERGEJOIN_DETAILS_EXP = r'\ *details: sortouter=(\d+) sortinner=(\d+) materializeinner=(\d+) initial_run_cost=(\d+\.\d+) initial_startup_cost=(\d+\.\d+) inner_run_cost=(\d+\.\d+) inner_scan_cost=(\d+\.\d+) inner_startup_cost=(\d+\.\d+) outer_scan_cost=(\d+\.\d+) outer_startup_cost=(\d+\.\d+) outerendsel=(\d+\.\d+) outerstartsel=(\d+\.\d+) innerendsel=(\d+\.\d+) innerstartsel=(\d+\.\d+) outer_rows=(\d+\.\d+) inner_rows=(\d+\.\d+) outer_skip_rows=(\d+\.\d+) inner_skip_rows=(\d+\.\d+)'
+                _MERGEJOIN_DETAILS_EXP = r'\ *details: sortouter=(\d+) sortinner=(\d+) materializeinner=(\d+) initial_run_cost=(\d+\.\d+) initial_startup_cost=(\d+\.\d+) inner_run_cost=(\d+\.\d+) inner_scan_cost=(\d+\.\d+) inner_startup_cost=(\d+\.\d+) outer_run_cost=(\d+\.\d+) outer_scan_cost=(\d+\.\d+) outer_startup_cost=(\d+\.\d+) outerendsel=(\d+\.\d+) outerstartsel=(\d+\.\d+) innerendsel=(\d+\.\d+) innerstartsel=(\d+\.\d+) outer_rows=(\d+\.\d+) inner_rows=(\d+\.\d+) outer_skip_rows=(\d+\.\d+) inner_skip_rows=(\d+\.\d+)'
                 details = re.match(_MERGEJOIN_DETAILS_EXP, line)
                 if details:
-                    sortouter, sortinner, materializeinner, initial_run_cost, initial_startup_cost, inner_run_cost, inner_scan_cost, inner_startup_cost, outer_scan_cost, outer_startup_cost, outerendsel, outerstartsel, innerendsel, innerstartsel, outer_rows, inner_rows, outer_skip_rows, inner_skip_rows = details.groups()
+                    sortouter, sortinner, materializeinner, initial_run_cost, initial_startup_cost, inner_run_cost, inner_scan_cost, inner_startup_cost, outer_run_cost, outer_scan_cost, outer_startup_cost, outerendsel, outerstartsel, innerendsel, innerstartsel, outer_rows, inner_rows, outer_skip_rows, inner_skip_rows = details.groups()
                     path_buffer.update({
                         'sortouter': int(sortouter),
                         'sortinner': int(sortinner),
@@ -186,6 +191,7 @@ def parse_path_with_state_machine(logs: list, cur: int):
                         'inner_run_cost': float(inner_run_cost),
                         'inner_scan_cost': float(inner_scan_cost),
                         'inner_startup_cost': float(inner_startup_cost),
+                        'outer_run_cost': float(outer_run_cost),
                         'outer_scan_cost': float(outer_scan_cost),
                         'outer_startup_cost': float(outer_startup_cost),
                         'outerendsel': float(outerendsel),
