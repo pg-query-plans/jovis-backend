@@ -92,7 +92,7 @@ DATABASES = {
         'USER': 'postgres',
         'PASSWORD': 'dbs402418',
         'HOST': 'localhost',
-        'PORT': '5433',
+        'PORT': '5432',
     }
 }
 
@@ -140,8 +140,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # Query Plan Optimization Visualization
-PG_LOG_FILE = ''
-PG_LOG_BACKUP_DIR = ''        # should be made before run
+PG_LOG_FILE = '/var/lib/postgresql/logfile'
+PG_LOG_BACKUP_DIR = '/home/dbs/jovis/backup'        # should be made before run
 
 if PG_LOG_FILE == '' or PG_LOG_BACKUP_DIR == '':
     print('Please set PG_LOG_FILE or PG_LOG_BACKUP_DIR before start!!!! You can see these in `backend/settings.py`')
