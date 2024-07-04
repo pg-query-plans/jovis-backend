@@ -178,30 +178,26 @@ def parse_path_with_state_machine(logs: list, cur: int):
                         'inner_scan_cost': float(inner_scan_cost)
                     })
             elif path_buffer['node'] == 'MergeJoin':
-                _MERGEJOIN_DETAILS_EXP = r'\ *details: sortouter=(\d+) sortinner=(\d+) materializeinner=(\d+) initial_run_cost=(\d+\.\d+) initial_startup_cost=(\d+\.\d+) inner_run_cost=(\d+\.\d+) inner_scan_cost=(\d+\.\d+) inner_startup_cost=(\d+\.\d+) outer_run_cost=(\d+\.\d+) outer_scan_cost=(\d+\.\d+) outer_startup_cost=(\d+\.\d+) outerendsel=(\d+\.\d+) outerstartsel=(\d+\.\d+) innerendsel=(\d+\.\d+) innerstartsel=(\d+\.\d+) outer_rows=(\d+\.\d+) inner_rows=(\d+\.\d+) outer_skip_rows=(\d+\.\d+) inner_skip_rows=(\d+\.\d+)'
+                _MERGEJOIN_DETAILS_EXP = r'\ *details: sortouter=(\d+) sortinner=(\d+) materializeinner=(\d+) initial_run_cost=(\d+\.\d+) initial_startup_cost=(\d+\.\d+) inner_scan_cost=(\d+\.\d+) inner_startup_cost=(\d+\.\d+) outer_run_cost=(\d+\.\d+) outer_scan_cost=(\d+\.\d+) outer_startup_cost=(\d+\.\d+) mergejointuples=(\d+\.\d+) bare_inner_cost=(\d+\.\d+) mat_inner_cost=(\d+\.\d+) merge_eval_cost=(\d+\.\d+) merge_init_eval_cost=(\d+\.\d+)'
                 details = re.match(_MERGEJOIN_DETAILS_EXP, line)
                 if details:
-                    sortouter, sortinner, materializeinner, initial_run_cost, initial_startup_cost, inner_run_cost, inner_scan_cost, inner_startup_cost, outer_run_cost, outer_scan_cost, outer_startup_cost, outerendsel, outerstartsel, innerendsel, innerstartsel, outer_rows, inner_rows, outer_skip_rows, inner_skip_rows = details.groups()
+                    sortouter, sortinner, materializeinner, initial_run_cost, initial_startup_cost, inner_scan_cost, inner_startup_cost, outer_run_cost, outer_scan_cost, outer_startup_cost, mergejointuples, bare_inner_cost, mat_inner_cost, merge_eval_cost, merge_init_eval_cost = details.groups()
                     path_buffer.update({
                         'sortouter': int(sortouter),
                         'sortinner': int(sortinner),
                         'materializeinner': int(materializeinner),
                         'initial_run_cost': float(initial_run_cost),
                         'initial_startup_cost': float(initial_startup_cost),
-                        'inner_run_cost': float(inner_run_cost),
                         'inner_scan_cost': float(inner_scan_cost),
                         'inner_startup_cost': float(inner_startup_cost),
                         'outer_run_cost': float(outer_run_cost),
                         'outer_scan_cost': float(outer_scan_cost),
                         'outer_startup_cost': float(outer_startup_cost),
-                        'outerendsel': float(outerendsel),
-                        'outerstartsel': float(outerstartsel),
-                        'innerendsel': float(innerendsel),
-                        'innerstartsel': float(innerstartsel),
-                        'outer_rows': float(outer_rows),
-                        'inner_rows': float(inner_rows),
-                        'outer_skip_rows': float(outer_skip_rows),
-                        'inner_skip_rows': float(inner_skip_rows)
+                        'mergejointuples': float(mergejointuples),
+                        'bare_inner_cost': float(bare_inner_cost),
+                        'mat_inner_cost': float(mat_inner_cost),
+                        'merge_eval_cost': float(merge_eval_cost),
+                        'merge_init_eval_cost': float(merge_init_eval_cost)
                     })
             elif path_buffer['node'] == 'HashJoin':
                 _HASHJOIN_DETAILS_EXP = r'\s*details:\s*initial_startup_cost=(\d+\.\d+)\s*initial_run_cost=(\d+\.\d+)\s*outer_path_startup=(\d+\.\d+)\s*outer_path_total=(\d+\.\d+)\s*inner_path_startup=(\d+\.\d+)\s*inner_path_total=(\d+\.\d+)\s*cpu_operator_cost=(\d+\.\d+)\s*num_hashclauses=(\d+)\s*cpu_tuple_cost=(\d+\.\d+)\s*inner_path_rows=(\d+\.\d+)\s*hashcpu_cost=(\d+\.\d+)\s*outer_path_rows=(\d+\.\d+)\s*innerpages=(\d+\.\d+)\s*outerpages=(\d+\.\d+)\s*seqpage_cost=(\d+\.\d+)\s*hashjointuples=(\d+\.\d+)\s*cpu_per_tuple=(\d+\.\d+)\s*hash_qual_eval_cost=(\d+\.\d+)'
