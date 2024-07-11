@@ -52,7 +52,7 @@ def read_and_clear_log():
 def parse_path_with_state_machine(logs: list, cur: int):
     """
     state list:
-    PathHeader, PathSeqScan, PathIdxScan, PathKeys, PathJoin, PathMJoin, PathOuter, PathInner
+    PathHeader, PathSeqScan, PathIdxScan, PathKeys, PathJoin, PathOuter, PathInner
     PathWait, PathWait2
     PathDone
     """
@@ -88,7 +88,7 @@ def parse_path_with_state_machine(logs: list, cur: int):
             if total_cost:
                 path_buffer['total_cost'] = float(total_cost)
 
-            if node in ['SeqScan', 'IdxScan', 'GatherMerge', 'BitmapHeapScan', 'HashJoin', 'MergeJoin', 'NestLoop']:
+            if node in ['SeqScan', 'IdxScan', 'GatherMerge', 'Gather', 'Agg', 'Append', 'Material', 'Group', 'IncrementalSort', 'BitmapHeapScan', 'HashJoin', 'MergeJoin', 'NestLoop']:
                 state = 'PathDetail'
             else:
                 state = 'PathWait'
@@ -145,16 +145,96 @@ def parse_path_with_state_machine(logs: list, cur: int):
                         'pages_fetched': int(pages_fetched),
                         'csquared': float(csquared)
                     })
-            elif path_buffer['node'] == 'GatherMerge':
-                _GATHERMERGE_DETAILS_EXP = r'\ *details: comparison_cost=(\d+\.\d+) cpu_operator_cost=(\d+\.\d+) N=(\d+) input_startup_cost=(\d+\.\d+)'
-                details = re.match(_GATHERMERGE_DETAILS_EXP, line)
+            elif path_buffer['node'] == 'Gather':
+                _GATHER_DETAILS_EXP = r'\ *details: subpath_startup_cost=(\d+\.\d+) parallel_setup_cost=(\d+\.\d+) subpath_run_cost=(\d+\.\d+) parallel_communication_cost=(\d+\.\d+)'
+                details = re.match(_GATHER_DETAILS_EXP, line)
                 if details:
-                    comparison_cost, cpu_operator_cost, N, input_startup_cost = details.groups()
+                    subpath_startup_cost, parallel_setup_cost, subpath_run_cost, parallel_communication_cost = details.groups()
                     path_buffer.update({
-                        'comparison_cost': float(comparison_cost),
-                        'cpu_operator_cost': float(cpu_operator_cost),
-                        'N': int(N),
-                        'input_startup_cost': float(input_startup_cost)
+                        'subpath_startup_cost': float(subpath_startup_cost),
+                        'parallel_setup_cost': float(parallel_setup_cost),
+                        'subpath_run_cost': float(subpath_run_cost),
+                        'parallel_communication_cost': float(parallel_communication_cost)
+                    })
+            elif path_buffer['node'] == 'GatherMerge':
+                    _GATHERMERGE_DETAILS_EXP = r'\ *details: heap_creation_cost=(\d+\.\d+) parallel_setup_cost=(\d+\.\d+) heap_maintenance_cost=(\d+\.\d+) heap_management_cost=(\d+\.\d+) parallel_communication_cost=(\d+\.\d+) input_total_cost=(\d+\.\d+)'
+                    details = re.match(_GATHERMERGE_DETAILS_EXP, line)
+                    if details:
+                        heap_creation_cost, parallel_setup_cost, heap_maintenance_cost, heap_management_cost, parallel_communication_cost, input_total_cost = details.groups()
+                        path_buffer.update({
+                            'heap_creation_cost': float(heap_creation_cost),
+                            'parallel_setup_cost': float(parallel_setup_cost),
+                            'heap_maintenance_cost': float(heap_maintenance_cost),
+                            'heap_management_cost': float(heap_management_cost),
+                            'parallel_communication_cost': float(parallel_communication_cost),
+                            'input_total_cost': float(input_total_cost)
+                        })
+            elif path_buffer['node'] == 'IncrementalSort':
+                _INCREMENTALSORT_DETAILS_EXP = r'\ *details: group_startup_cost=(\d+\.\d+) group_input_run_cost=(\d+\.\d+) input_startup_cost=(\d+\.\d+) group_processing_total_cost=(\d+\.\d+) cpu_tuple_cost=(\d+\.\d+) cpu_group_cost=(\d+\.\d+)'
+                details = re.match(_INCREMENTALSORT_DETAILS_EXP, line)
+                if details:
+                    group_startup_cost, group_input_run_cost, input_startup_cost, group_processing_total_cost, cpu_tuple_cost, cpu_group_cost = details.groups()
+                    path_buffer.update({
+                        'group_startup_cost': float(group_startup_cost),
+                        'group_input_run_cost': float(group_input_run_cost),
+                        'input_startup_cost': float(input_startup_cost),
+                        'group_processing_total_cost': float(group_processing_total_cost),
+                        'cpu_tuple_cost': float(cpu_tuple_cost),
+                        'cpu_group_cost': float(cpu_group_cost)
+                    })
+            elif path_buffer['node'] == 'Material':
+                _MATERIAL_DETAILS_EXP = r'\ *details: input_startup_cost=(\d+\.\d+) input_run_cost=(\d+\.\d+) cpu_run_cost=(\d+\.\d+) disk_run_cost=(\d+\.\d+)'
+                details = re.match(_MATERIAL_DETAILS_EXP, line)
+                if details:
+                    input_startup_cost, input_run_cost, cpu_run_cost, disk_run_cost = details.groups()
+                    path_buffer.update({
+                        'input_startup_cost': float(input_startup_cost),
+                        'input_run_cost': float(input_run_cost),
+                        'cpu_run_cost': float(cpu_run_cost),
+                        'disk_run_cost': float(disk_run_cost)
+                    })
+            elif path_buffer['node'] == 'Group':
+                _GROUP_DETAILS_EXP = r'\ *details: input_startup_cost=(\d+\.\d+) qual_eval_startup_cost=(\d+\.\d+) input_total_cost=(\d+\.\d+) group_by_comparison_cost=(\d+\.\d+) qual_eval_total_cost=(\d+\.\d+)'
+                details = re.match(_GROUP_DETAILS_EXP, line)
+                if details:
+                    input_startup_cost, qual_eval_startup_cost, input_total_cost, group_by_comparison_cost, qual_eval_total_cost = details.groups()
+                    path_buffer.update({
+                        'input_startup_cost': float(input_startup_cost),
+                        'qual_eval_startup_cost': float(qual_eval_startup_cost),
+                        'input_total_cost': float(input_total_cost),
+                        'group_by_comparison_cost': float(group_by_comparison_cost),
+                        'qual_eval_total_cost': float(qual_eval_total_cost)
+                    })
+            elif path_buffer['node'] == 'Agg':
+                _AGG_DETAILS_EXP = r'\ *details: trans_startup_cost=(\d+\.\d+) trans_cpu_run_cost=(\d+\.\d+) final_startup_cost=(\d+\.\d+) final_cpu_group_cost=(\d+\.\d+) group_by_comparison_cost=(\d+\.\d+) cpu_group_cost=(\d+\.\d+) input_startup_cost=(\d+\.\d+) input_total_cost=(\d+\.\d+) disk_write_cost=(\d+\.\d+) disk_read_cost=(\d+\.\d+) cpu_spill_cost=(\d+\.\d+) qual_eval_startup_cost=(\d+\.\d+) qual_eval_total_cost=(\d+\.\d+)'
+                details = re.match(_AGG_DETAILS_EXP, line)
+                if details:
+                    trans_startup_cost, trans_cpu_run_cost, final_startup_cost, final_cpu_group_cost, group_by_comparison_cost, cpu_group_cost, input_startup_cost, input_total_cost, disk_write_cost, disk_read_cost, cpu_spill_cost, qual_eval_startup_cost, qual_eval_total_cost = details.groups()
+                    path_buffer.update({
+                        'trans_startup_cost': float(trans_startup_cost),
+                        'trans_cpu_run_cost': float(trans_cpu_run_cost),
+                        'final_startup_cost': float(final_startup_cost),
+                        'final_cpu_group_cost': float(final_cpu_group_cost),
+                        'group_by_comparison_cost': float(group_by_comparison_cost),
+                        'cpu_group_cost': float(cpu_group_cost),
+                        'input_startup_cost': float(input_startup_cost),
+                        'input_total_cost': float(input_total_cost),
+                        'disk_write_cost': float(disk_write_cost),
+                        'disk_read_cost': float(disk_read_cost),
+                        'cpu_spill_cost': float(cpu_spill_cost),
+                        'qual_eval_startup_cost': float(qual_eval_startup_cost),
+                        'qual_eval_total_cost': float(qual_eval_total_cost)
+                    })
+            elif path_buffer['node'] == 'Append':
+                _APPEND_DETAILS_EXP = r'\ *details: subpath_startup_cost=(\d+\.\d+) subpath_total_cost=(\d+\.\d+) subpath_nonpartial_cost=(\d+\.\d+) cpu_run_cost=(\d+\.\d+)'
+                details = re.match(_APPEND_DETAILS_EXP, line)
+                if details:
+                    subpath_startup_cost, subpath_total_cost, subpath_nonpartial_cost, cpu_run_cost = details.groups()
+                    path_buffer.update({
+                        'subpath_startup_cost': float(subpath_startup_cost),
+                        'subpath_total_cost': float(subpath_total_cost),
+                        'subpath_nonpartial_cost': float(subpath_nonpartial_cost),
+                        'cpu_run_cost': float(cpu_run_cost)
                     })
             elif path_buffer['node'] == 'NestLoop':
                 _NESTLOOP_DETAILS_EXP = r'\ *details: initial_startup_cost=(\d+\.\d+) initial_run_cost=(\d+\.\d+) inner_run_cost=(\d+\.\d+) inner_rescan_run_cost=(\d+\.\d+) inner_rescan_start_cost=(\d+\.\d+) inner_path_startup=(\d+\.\d+) outer_rows=(\d+\.\d+) outer_path_startup=(\d+\.\d+) outer_path_run=(\d+\.\d+) ntuples=(\d+\.\d+) cpu_per_tuple=(\d+\.\d+) matched_outer_tuple_cost=(\d+\.\d+) unmatched_outer_tuple_cost=(\d+\.\d+) inner_scan_cost=(\d+\.\d+)'
